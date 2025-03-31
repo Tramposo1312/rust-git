@@ -18,7 +18,7 @@ enum Commands {
     Status {},
 }
 
-fn main() {
+fn main() -> anyhow::result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -34,10 +34,12 @@ fn main() {
             //...
         }
         Some(Commands::Status {}) => {
-            println!("SHowing repository status...")
+            commands::status::execute()?;
         }
         None => {
             println!("No command provided. Use --help for available commands")
         }
     }
+
+    Ok(())
 }
