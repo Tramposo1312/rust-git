@@ -11,27 +11,24 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Init {},
+
     Add {
         #[arg(required = true)]
         files: Vec<String>,
     },
+
     Status {},
 }
 
-fn main() -> anyhow::result<()> {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
         Some(Commands::Init {}) => {
-            println!("Initialising repository...");
-            //...
+            commands::init::execute()?;
         }
         Some(Commands::Add { files }) => {
-            println!("Adding files to staging area:");
-            for file in files {
-                println!(" {}", file);
-            }
-            //...
+            commands::add::execute(files)?;
         }
         Some(Commands::Status {}) => {
             commands::status::execute()?;
