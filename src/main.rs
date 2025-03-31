@@ -18,6 +18,11 @@ enum Commands {
     },
 
     Status {},
+
+    Commit {
+        #[arg(short, long)]
+        message: String,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -32,6 +37,9 @@ fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Status {}) => {
             commands::status::execute()?;
+        }
+        Some(Commands::Commit { message }) => {
+            commands::commit::execute(message)?;
         }
         None => {
             println!("No command provided. Use --help for available commands")
