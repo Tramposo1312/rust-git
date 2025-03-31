@@ -1,4 +1,5 @@
-use anyhow::{Context, Result};
+use crate::utils;
+use anyhow::Result;
 use std::fs;
 use std::path::Path;
 
@@ -10,15 +11,12 @@ pub fn execute() -> Result<()> {
         return Ok(());
     }
 
-    //Basic repo struct
-    fs::create_dir(git_dir).context("Failed to create .git directory")?;
-    fs::create_dir(git_dir.join("objects")).context("Failed to create objects directory")?;
-    fs::create_dir(git_dir.join("refs")).context("Failed to create refs directory")?;
-    fs::create_dir(git_dir.join("refs/heads")).context("Failed to create refs/heads directory")?;
+    fs::create_dir(git_dir)?;
+    fs::create_dir(git_dir.join("objects"))?;
+    fs::create_dir(git_dir.join("refs"))?;
+    fs::create_dir(git_dir.join("refs/heads"))?;
 
-    //Initial HEAD file
-    fs::write(git_dir.join("HEAD"), "ref: refs/heads/main\n")
-        .context("Failed to create HEAD file")?;
+    utils::safe_write_text_file(&git_dir.join("HEAD"), "ref: refs/heads/master\n")?;
 
     println!("Initialised empty git repository in .git/");
     Ok(())

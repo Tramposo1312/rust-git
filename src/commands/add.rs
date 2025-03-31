@@ -1,9 +1,9 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub fn execute(files: &[String]) -> Result<()> {
     let git_dir = Path::new(".git");
@@ -12,9 +12,17 @@ pub fn execute(files: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    let index_path = git_dir.join("Index");
-    if !index_path.exists() {
-        fs::write(&index_path, "")?;
+    let index_path = git_dir.join("index");
+
+    let mut index_entries = Vec::new();
+    if index_path.exists() {
+        if let Ok(bytes) = fs::read(&index_path) {
+            let content = String::from_utf8_lossy(&bytes);
+
+            for line in content.lines() {
+                index_entries.push(line.to_string());
+            }
+        }
     }
 
     for file_name in files {
@@ -24,28 +32,35 @@ pub fn execute(files: &[String]) -> Result<()> {
             println!("warning: {} did not match any files", file_name);
             continue;
         }
-        //we'll just store the file name in the index instead of hashing and storing
-        let mut file = fs::File::open(file_path)?;
-        let mut content = Vec::new();
-        file.read_to_end(&mut content)?;
 
-        let hash = calculate_hash(&content);
+        match fs::read(file_path) {
+            Ok(content) => {
+                let hash = calculate_hash(&content);
 
-        let object_dir = git_dir.join("objects").join(&hash[..2]);
-        fs::create_dir_all(&object_dir)?;
+                let object_dir = git_dir.join("objects").join(&hash[..2]);
+                fs::create_dir_all(&object_dir)?;
 
-        //store the files content in objs directory
-        let object_path = object_dir.join(&hash[..2]);
-        fs::write(&object_path, &content)?;
+                let object_path = object_dir.join(&hash[2..]);
+                fs::write(&object_path, &content)?;
 
-        println!("Added '{}' to index", file_path.display());
+                index_entries.push(format!("{} {}", hash, file_path.display()));
+
+                println!("Added '{}' to index", file_path.display());
+            }
+            Err(e) => {
+                println!("warning: could not read file '{}': {}", file_name, e);
+            }
+        }
     }
+
+    let index_content = index_entries.join("\n") + "\n";
+    fs::write(&index_path, index_content)?;
 
     Ok(())
 }
 
 fn calculate_hash(data: &[u8]) -> String {
     let mut hasher = DefaultHasher::new();
-    data.hash(&mut hasher);
+    hasher.write(data);
     format!("{:016x}", hasher.finish())
 }
